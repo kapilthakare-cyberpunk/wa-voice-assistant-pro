@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./apps/backend
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      OLLAMA_BASE_URL: http://ollama:11434
+      DATABASE_URL: file:///app/data/db.sqlite
+      API_KEY: ${API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - backend-data:/app/data
+      - backend-logs:/app/logs
+    depends_on:
+      - ollama
+    networks:
+      - voice-network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - '3001:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - voice-network
+    restart: unless-stopped
+
+  tui:
+    build:
+      context: ./apps/tui
+    environment:
+      API_URL: http://backend:3000
+    depends_on:
+      - backend
+    networks:
+      - voice-network
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - voice-network
+    restart: unless-stopped
+
+volumes:
+  backend-data:
+  backend-logs:
+  ollama-data:
+
+networks:
+  voice-network:
+    driver: bridge

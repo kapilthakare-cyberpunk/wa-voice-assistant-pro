@@ -1,0 +1,41 @@
+{
+  "name": "voice-assistant-pro",
+  "version": "1.0.0",
+  "description": "Production-grade voice assistant with WhatsApp, LiveKit, and multi-LLM support",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "start": "npm start --workspace=apps/backend",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "bootstrap": "npm ci && npm install --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules dist"
+  },
+  "keywords": [
+    "voice-assistant",
+    "whatsapp",
+    "livekit",
+    "groq",
+    "mistral",
+    "ollama",
+    "ai",
+    "llm",
+    "production",
+    "typescript"
+  ],
+  "author": "Kapil Thakare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kapilthakare-cyberpunk/voice-assistant-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kapilthakare-cyberpunk/voice-assistant-pro/issues"
+  },
+  "homepage": "https://github.com/kapilthakare-cyberpunk/voice-assistant-pro"
+}

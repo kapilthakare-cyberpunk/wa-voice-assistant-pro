@@ -1,0 +1,16 @@
+# LiveKit Voice Agent
+# Requirements for running the voice agent
+
+livekit-agents
+livekit
+aiohttp
+python-dotenv
+
+# For STT (Speech-to-Text)
+livekit-plugins-deepgram
+
+# For VAD (Voice Activity Detection)  
+livekit-plugins-silero
+
+# For TTS (Text-to-Speech) - optional, uses LiveKit Cloud TTS by default
+# livekit-plugins-openai

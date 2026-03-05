@@ -30,12 +30,11 @@ interface RateLimitState {
   tokens: number;
   lastRefill: number;
   maxTokens: number;
-  refillRate: number; // tokens per second
+  refillRate: number;
 }
 
 export class UnifiedLLMClient {
   private rateLimitState: Map<string, RateLimitState> = new Map();
-  private providerClients: Map<string, any> = new Map();
 
   constructor() {
     this.initializeProviders();
@@ -59,62 +58,42 @@ export class UnifiedLLMClient {
   }
 
   private initGroq() {
-    if (!config.GROQ_API_KEY) {
-      throw new ValidationError('GROQ_API_KEY is required for Groq provider');
-    }
-
-    // Rate limit: 30 req/min = 0.5 req/sec
     this.rateLimitState.set('groq', {
       tokens: 30,
       lastRefill: Date.now(),
       maxTokens: 30,
       refillRate: 0.5,
     });
-
     logger.info('Groq client initialized');
   }
 
   private initMistral() {
-    if (!config.MISTRAL_API_KEY) {
-      throw new ValidationError('MISTRAL_API_KEY is required for Mistral provider');
-    }
-
-    // Rate limit: 2 req/min = 0.033 req/sec
     this.rateLimitState.set('mistral', {
       tokens: 2,
       lastRefill: Date.now(),
       maxTokens: 2,
       refillRate: 0.033,
     });
-
     logger.info('Mistral client initialized');
   }
 
   private initOllama() {
-    // Ollama has no rate limits (local)
     this.rateLimitState.set('ollama', {
       tokens: Number.MAX_SAFE_INTEGER,
       lastRefill: Date.now(),
       maxTokens: Number.MAX_SAFE_INTEGER,
       refillRate: Number.MAX_SAFE_INTEGER,
     });
-
     logger.info('Ollama client initialized');
   }
 
   private initDeepSeek() {
-    if (!config.DEEPSEEK_API_KEY) {
-      throw new ValidationError('DEEPSEEK_API_KEY is required for DeepSeek provider');
-    }
-
-    // Rate limit: typically generous
     this.rateLimitState.set('deepseek', {
       tokens: 100,
       lastRefill: Date.now(),
       maxTokens: 100,
       refillRate: 1,
     });
-
     logger.info('DeepSeek client initialized');
   }
 
@@ -123,7 +102,7 @@ export class UnifiedLLMClient {
     if (!state) return;
 
     const now = Date.now();
-    const timePassed = (now - state.lastRefill) / 1000; // seconds
+    const timePassed = (now - state.lastRefill) / 1000;
     const tokensToAdd = timePassed * state.refillRate;
 
     state.tokens = Math.min(state.maxTokens, state.tokens + tokensToAdd);
@@ -148,10 +127,7 @@ export class UnifiedLLMClient {
       async () => {
         this.checkRateLimit(provider);
 
-        logger.debug(
-          { provider, messageCount: messages.length },
-          'Sending request to LLM provider'
-        );
+        logger.debug({ provider, messageCount: messages.length }, 'Sending request to LLM provider');
 
         const startTime = Date.now();
         let response: LLMResponse;
@@ -174,14 +150,7 @@ export class UnifiedLLMClient {
         }
 
         const duration = Date.now() - startTime;
-        logger.debug(
-          {
-            provider,
-            duration,
-            tokensUsed: response.tokensUsed,
-          },
-          'LLM request completed'
-        );
+        logger.debug({ provider, duration, tokensUsed: response.tokensUsed }, 'LLM request completed');
 
         return response;
       },
@@ -197,7 +166,7 @@ export class UnifiedLLMClient {
         Authorization: `Bearer ${config.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',
+        model: 'llama-3.3-70b-versatile',
         messages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 1024,

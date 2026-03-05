@@ -122,23 +122,33 @@ process.on('unhandledRejection', (reason, promise) => {
 // START SERVER
 // ============================================
 
-const PORT = config.PORT;
-const ENV = config.NODE_ENV;
+async function start() {
+  // Initialize database
+  await db.init();
 
-server.listen(PORT, () => {
-  logger.info(
-    {
-      port: PORT,
-      env: ENV,
-      provider: config.LLM_PROVIDER,
-      database: config.DATABASE_URL,
-    },
-    `🚀 Server started`
-  );
+  const PORT = config.PORT;
+  const ENV = config.NODE_ENV;
 
-  logger.info(`📊 Dashboard: http://localhost:${PORT}`);
-  logger.info(`🔗 API: http://localhost:${PORT}/api`);
-  logger.info(`❤️ Health: http://localhost:${PORT}/api/health`);
+  server.listen(PORT, () => {
+    logger.info(
+      {
+        port: PORT,
+        env: ENV,
+        provider: config.LLM_PROVIDER,
+        database: config.DATABASE_URL,
+      },
+      `🚀 Server started`
+    );
+
+    logger.info(`📊 Dashboard: http://localhost:${PORT}`);
+    logger.info(`🔗 API: http://localhost:${PORT}/api`);
+    logger.info(`❤️ Health: http://localhost:${PORT}/api/health`);
+  });
+}
+
+start().catch((err) => {
+  logger.fatal({ err }, 'Failed to start server');
+  process.exit(1);
 });
 
 export default app;

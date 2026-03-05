@@ -46,3 +46,12 @@ coverage/
 # Misc
 *.tgz
 .cache/
+
+
+# Database
+*.db
+*.sqlite
+data/
+
+# WhatsApp session
+whatsapp-session/

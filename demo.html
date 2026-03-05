@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Assistant Pro - Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .typing-indicator span {
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+  <div class="max-w-4xl mx-auto p-6">
+    <!-- Header -->
+    <div class="text-center py-8">
+      <h1 class="text-5xl font-bold mb-2">🎤 Voice Assistant Pro</h1>
+      <p class="text-xl text-gray-300">AI-Powered WhatsApp Voice Assistant with Groq LLM</p>
+      <div class="flex justify-center gap-4 mt-4">
+        <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">🟢 Groq Connected</span>
+        <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">📡 WebSocket Ready</span>
+        <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm">🧠 LLaMA 3.3</span>
+      </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
+        <p class="text-gray-400 text-sm">Status</p>
+        <p id="status" class="text-2xl font-bold text-green-400">Loading...</p>
+      </div>
+      <div class="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
+        <p class="text-gray-400 text-sm">API Latency</p>
+        <p id="latency" class="text-2xl font-bold text-yellow-400">--</p>
+      </div>
+      <div class="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
+        <p class="text-gray-400 text-sm">Provider</p>
+        <p id="provider" class="text-2xl font-bold text-blue-400">Groq</p>
+      </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="bg-white/5 backdrop-blur rounded-2xl p-6 mb-8">
+      <div id="chat-messages" class="h-80 overflow-y-auto mb-4 space-y-4 pr-2">
+        <div class="flex justify-center">
+          <div class="text-gray-400 text-sm">Demo ready - start chatting!</div>
+        </div>
+      </div>
+      
+      <!-- Input -->
+      <div class="flex gap-3">
+        <input 
+          id="message-input"
+          type="text" 
+          placeholder="Type your message..." 
+          class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500"
+          onkeypress="if(event.key==='Enter')sendMessage()"
+        >
+        <button 
+          onclick="sendMessage()"
+          class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-bold transition"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex justify-center gap-3">
+      <button onclick="setMessage('Hello! How are you?')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm">👋 Hello</button>
+      <button onclick="setMessage('Tell me a joke')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm">😂 Joke</button>
+      <button onclick="setMessage('What can you help me with?')" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm">❓ Help</button>
+      <button onclick="clearChat()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+    let userId = 'demo-' + Math.random().toString(36).substr(2, 9);
+
+    // Check health
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API_URL}/api/health`);
+        const data = await res.json();
+        document.getElementById('status').textContent = data.status === 'healthy' ? 'Healthy' : 'Degraded';
+        document.getElementById('status').className = data.status === 'healthy' ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+        document.getElementById('latency').textContent = data.latencyMs + 'ms';
+        document.getElementById('provider').textContent = data.provider || 'Groq';
+      } catch (e) {
+        document.getElementById('status').textContent = 'Offline';
+        document.getElementById('status').className = 'text-2xl font-bold text-red-400';
+      }
+    }
+
+    // Send message
+    async function sendMessage() {
+      const input = document.getElementById('message-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      // Add user message
+      addMessage(message, 'user');
+      input.value = '';
+
+      // Show typing
+      showTyping();
+
+      try {
+        const res = await fetch(`${API_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, message })
+        });
+        
+        const data = await res.json();
+        hideTyping();
+
+        if (data.response) {
+          addMessage(data.response, 'assistant');
+          document.getElementById('latency').textContent = data.duration + 'ms';
+        } else {
+          addMessage('Error: ' + (data.message || 'Unknown error'), 'error');
+        }
+      } catch (e) {
+        hideTyping();
+        addMessage('Connection error: ' + e.message, 'error');
+      }
+    }
+
+    function addMessage(text, role) {
+      const container = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = role === 'user' 
+        ? 'flex justify-end' 
+        : role === 'error'
+        ? 'flex justify-center'
+        : 'flex justify-start';
+      div.innerHTML = role === 'user'
+        ? `<div class="bg-blue-600 px-4 py-2 rounded-2xl max-w-xs">${escapeHtml(text)}</div>`
+        : role === 'error'
+        ? `<div class="text-red-400 text-sm">${escapeHtml(text)}</div>`
+        : `<div class="bg-white/10 px-4 py-2 rounded-2xl max-w-md">${escapeHtml(text)}</div>`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showTyping() {
+      const container = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.id = 'typing';
+      div.className = 'flex justify-start';
+      div.innerHTML = `<div class="typing-indicator bg-white/10 px-4 py-2 rounded-2xl"><span class="inline-block w-2 h-2 bg-gray-400 rounded-full mx-1"></span><span class="inline-block w-2 h-2 bg-gray-400 rounded-full mx-1"></span><span class="inline-block w-2 h-2 bg-gray-400 rounded-full mx-1"></span></div>`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() {
+      const typing = document.getElementById('typing');
+      if (typing) typing.remove();
+    }
+
+    function setMessage(msg) {
+      document.getElementById('message-input').value = msg;
+    }
+
+    function clearChat() {
+      document.getElementById('chat-messages').innerHTML = '<div class="flex justify-center"><div class="text-gray-400 text-sm">Chat cleared</div></div>';
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Init
+    checkHealth();
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>

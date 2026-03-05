@@ -50,6 +50,14 @@ class HealthService {
         timestamp: new Date(),
         provider: response.provider,
         responseTimeMs: latency,
+        tokensUsed: response.tokensUsed?.total ?? 0,
+        success: true,
+      });
+      db.saveMetrics({
+        id: uuidv4(),
+        timestamp: new Date(),
+        provider: response.provider,
+        responseTimeMs: latency,
         tokensUsed: response.tokensUsed?.total || 0,
         success: true,
       });

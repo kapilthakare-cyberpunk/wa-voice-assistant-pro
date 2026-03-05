@@ -3,6 +3,7 @@ import { conversationService } from '../services/conversation';
 import { healthService } from '../services/health';
 import { logger } from '../utils/logger';
 import { VoiceAssistantError } from '../utils/errors';
+import { db } from '../database/db';
 
 const router = Router();
 
@@ -10,10 +11,7 @@ const router = Router();
 router.use(express.json());
 
 router.use((req, res, next) => {
-  logger.debug(
-    { method: req.method, path: req.path },
-    'Incoming request'
-  );
+  logger.debug({ method: req.method, path: req.path }, 'Incoming request');
   next();
 });
 
@@ -76,7 +74,7 @@ router.use(
 
     res.status(500).json({
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
+      message: err.message || 'An unexpected error occurred',
     });
   }
 );

@@ -43,6 +43,12 @@ const configSchema = z.object({
   // Monitoring
   SENTRY_DSN: z.string().optional(),
   ENABLE_METRICS: z.string().default('true'),
+
+  // MCP Configuration
+  MCP_TRANSPORT_TYPE: z.enum(['stdio', 'sse']).default('stdio'),
+  MCP_COMMAND: z.string().default('npx'),
+  MCP_ARGS: z.string().default('wweb-mcp'),
+  MCP_SERVER_URL: z.string().default('http://localhost:3002'),
 });
 
 export const config = configSchema.parse(process.env);

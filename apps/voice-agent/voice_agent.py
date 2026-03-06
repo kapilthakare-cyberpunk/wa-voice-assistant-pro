@@ -1,74 +1,60 @@
 """
-LiveKit Voice Agent - Simple Version
-
-Uses your existing /api/chat endpoint.
-Supports Deepgram STT and LiveKit TTS.
+LiveKit Voice Agent - Using livekit-agents 1.x AgentSession API
+Uses Deepgram STT, Silero VAD, and Groq LLM with AgentSession.
 """
 
 import os
 import asyncio
-import aiohttp
-from livekit import rtc
-from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
-from livekit.agents.pipeline import VoicePipelineAgent
-from livekit.plugins import deepgram, silero, openai
+import logging
+from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, AgentSession
+from livekit.plugins import deepgram, silero
+import livekit.plugins.groq as groq
 
-# Configuration
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:3000")
-AGENT_NAME = os.getenv("AGENT_NAME", "WhatsApp Assistant")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("voice-agent")
+
+# Configuration from environment
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
 async def entrypoint(ctx: JobContext):
     """Main agent entrypoint"""
+    logger.info(f"Starting agent in room: {ctx.room.name}")
+
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+    logger.info("Connected to room")
 
-    # Wait for participant to join
-    print(f"Waiting for participant in room: {ctx.room.name}")
+    # Wait for participant
     participant = await ctx.wait_for_participant()
-    print(f"Participant joined: {participant.identity}")
+    logger.info(f"Participant joined: {participant.identity}")
 
-    # Build chat context
-    chat_ctx = llm.ChatContext()
-    chat_ctx.messages.append(
-        llm.ChatMessage(
-            role=llm.ChatRole.SYSTEM,
-            content="""You are a helpful voice assistant. 
-Be friendly, concise, and helpful.
-Keep responses short (1-2 sentences max) for voice.""",
-        )
-    )
-
-    # Create the voice agent with Groq LLM
-    agent = VoicePipelineAgent(
+    # Create the session with pipeline
+    session = AgentSession(
         vad=silero.VAD.load(),
-        stt=deepgram.STT(),
-        llm=openai.LLM(
-            model="groq/llama-3.3-70b-versatile",
-            api_key=os.getenv("GROQ_API_KEY", ""),
-        ),
-        chat_ctx=chat_ctx,
+        stt=deepgram.STM(model="nova-2"),
+        llm=groq.LLM(model="llama-3.3-70b-versatile"),
     )
 
-    @agent.on("user_speech_committed")
-    def on_speech(transcription: rtc.Transcription):
-        print(f"User said: {transcription.text}")
+    # Start the session
+    await session.start(room=ctx.room, participant=participant)
+    logger.info("Session started")
 
-    # Start the agent
-    agent.start(room=ctx.room, participant=participant)
-
-    # Initial greeting
-    await agent.say(
+    # Send initial greeting
+    await session.say(
         "Hello! I'm your voice assistant. How can I help you today?",
         allow_interruptions=True,
     )
+    logger.info("Greeting sent")
 
-    # Keep the agent running
-    await asyncio.Future()  # Run forever
+    # Keep running
+    await asyncio.Future()
 
 
 if __name__ == "__main__":
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
+            agent_name="voice-assistant",
         )
     )

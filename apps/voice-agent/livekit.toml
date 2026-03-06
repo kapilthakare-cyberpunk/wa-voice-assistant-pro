@@ -1,0 +1,27 @@
+# LiveKit configuration
+# Your credentials from LiveKit Cloud
+
+[general]
+# url = 
+# api_key = 
+# api_secret = 
+
+[agent]
+name = "voice-assistant"
+region = "us-west-2"
+
+[secrets]
+# Add your Groq API key here
+# GROQ_API_KEY = 
+
+url = "wss://wa-voice-assistant-pro-6xt2mjb9.livekit.cloud"
+api_key = "APIRSqMApQuHPwS"
+api_secret = "wE4UWRUaRN0aSUTkal3Ms7njLvRosKCwJFT7rLg4aQK"
+
+[agent]
+name = "voice-assistant"
+region = "us-west-2"
+
+[secrets]
+# Add your Groq API key here
+GROQ_API_KEY = ""

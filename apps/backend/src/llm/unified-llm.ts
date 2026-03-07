@@ -159,6 +159,8 @@ export class UnifiedLLMClient {
   }
 
   private async callGroq(messages: Message[], options: LLMOptions): Promise<LLMResponse> {
+    logger.debug({ url: 'https://api.groq.com/openai/v1/chat/completions', messages }, 'Calling Groq API');
+    
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -174,8 +176,11 @@ export class UnifiedLLMClient {
       }),
     });
 
+    logger.debug({ status: response.status, statusText: response.statusText }, 'Groq API response');
+
     if (!response.ok) {
       const error = await response.json();
+      logger.error({ error }, 'Groq API error response');
       if (response.status === 429) {
         throw new RateLimitError(60);
       }
@@ -183,13 +188,19 @@ export class UnifiedLLMClient {
     }
 
     const data = await response.json();
+    logger.debug({ data }, 'Groq API response data');
+
+    // Validate response structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new LLMError('Invalid Groq API response: missing choices or message', data);
+    }
 
     return {
       content: data.choices[0].message.content,
       tokensUsed: {
-        prompt: data.usage.prompt_tokens,
-        completion: data.usage.completion_tokens,
-        total: data.usage.total_tokens,
+        prompt: data.usage?.prompt_tokens ?? 0,
+        completion: data.usage?.completion_tokens ?? 0,
+        total: data.usage?.total_tokens ?? 0,
       },
       model: data.model,
       provider: 'groq',

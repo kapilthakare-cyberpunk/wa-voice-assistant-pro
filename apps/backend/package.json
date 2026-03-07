@@ -11,6 +11,7 @@
     "health-check": "node -e \"require('http').get('http://localhost:3000/api/health', (r) => console.log(r.statusCode))\""
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@types/ws": "^8.18.1",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

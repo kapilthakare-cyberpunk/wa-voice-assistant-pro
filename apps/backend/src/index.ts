@@ -6,12 +6,7 @@ import { setupWebSocket } from './api/websocket';
 import { config } from './utils/config';
 import { logger } from './utils/logger';
 import { db } from './database/db';
-import { createServer } from 'http';
-import routes from './api/routes';
-import { setupWebSocket } from './api/websocket';
-import { config } from './utils/config';
-import { logger } from './utils/logger';
-import { db } from './database/db';
+
 
 const app = express();
 const server = createServer(app);
@@ -75,7 +70,7 @@ app.use('/api', routes);
 
 // MCP/WhatsApp routes
 app.use('/api', mcpRoutes);
-app.use('/api', routes);
+
 
 // Static files
 app.use(express.static('public'));
